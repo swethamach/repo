@@ -14,7 +14,7 @@ DEV_FOUND="NO"
 DEV="remotes/origin/$1"
 echo "$DEV"
 REL="remotes/origin/$2"
-echo "REL"
+echo "$REL"
 #git branch -a | grep -E '^\*' | awk '{print $2}'  > c:/swethaw/xabc
 #sed -i 's/*//g' c:/swethaw/xabc
 #while read branch
@@ -105,12 +105,12 @@ do
 			echo "Error while git pull from stash for development branch " >> $LOG_FILE
 			exit 1
 		fi
-	else
-		echo "Cannot Checkout development branch $1" >> $LOG_FILE
-		exit 1
+	#else
+	#	echo "Cannot Checkout development branch $1" >> $LOG_FILE
+	#	exit 1
 	fi
-	echo "Done with the script" >> $LOG_FILE
-	exit 1
+	#echo "Done with the script" >> $LOG_FILE
+	#exit 1
 #done < c:/swethaw/abc
 done
 
