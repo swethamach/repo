@@ -10,10 +10,12 @@ LOG_FILE=c:/swethaw/merge_$1_$2_$today.log
 echo "Start of Build...." >> $LOG_FILE
 
 DEV_FOUND="NO"
+
 DEV="remotes/origin/$1"
 echo "$DEV"
 REL="remotes/origin/$2"
 echo "REL"
+
 #git branch -a | grep -E '^\*' | awk '{print $2}'  > c:/swethaw/xabc
 #sed -i 's/*//g' c:/swethaw/xabc
 #while read branch
@@ -32,7 +34,7 @@ do
 				RELEASE_FOUND="NO"
 				#git branch -a | grep -E '^\*' | awk '{print $2}' > c:/swethaw/rabc				
 				#sed -i 's/*//g' c:/swethaw/rabc
-				
+				STATUS=1
 				#this loop is to check whether the release branch exist or not
 				#while read relbranch
 				for relbranch in $(git branch -a | sed 's/* //g' | sed 's/  //g')
@@ -40,71 +42,76 @@ do
 					echo "Checking $relbranch for matching release branch $2" >>$LOG_FILE # THIS print can be deleted later
 					if [ "$REL" = "$relbranch" ] ; then
 						RELEASE_FOUND="YES"
-						echo "Release branch $2 found" >>$LOG_FILE
+						echo "Release branch $2 found. Checking out to release branch" >>$LOG_FILE
 						git checkout $2
-						if [ "$?" = 0 ]; then
-							echo "Checkout to release branch is successful">>$LOG_FILE
-							RESULT=`git merge $1`
-							if [ "$RESULT" == "Merged to release branch $2" ]; then
-								git push                                                                
-								TAG_FOUND="NO"
-								#Check if the tag exists in git
-								for tag_name in $(git tag)
-								do
-									echo "Checking the tag $tag_name" >>$LOG_FILE
-									if [ $tag_name = "$3" ]; then
-										TAG_FOUND="YES"
-										echo "Tag $3 found and need to be deleted" >>$LOG_FILE
-										break
-									fi                                                      
-								done
-								
-								#Delete the tag if it is already present
-								if [ $TAG_FOUND == "YES" ]; then
-									git tag -d $3
-									git push -u origin tag :$3
-									echo "Successfully deleted the tag $3" >>$LOG_FILE
-								fi
-								#Create the tag
-								git tag $3
-								git push origin tag $3
-								echo "Successfully created the tag and merged the code to release branch" >>$LOG_FILE
-							elif [ "$RESULT" == "Already up-to-date." ]; then
-								echo "Result : $RESULT" >> $LOG_FILE
-							else								
-								echo "Result : $RESULT" >> $LOG_FILE
-								echo "Conflicts found while merging to $2" >> $LOG_FILE
-								exit 1
-							fi
-						else
-							echo "Release branch $2 checkout not successful" >> $LOG_FILE
-							exit 1
-						fi
+						STATUS=$?
 						break
-					fi
-				#done < c:/swethaw/xyz					
+					fi				
 				done
 				
-				if [ $RELEASE_FOUND == "YES" ]; then
-					echo "Release branch $2 found and done with merge task" >> $LOG_FILE
-					break
-				else
-					echo "Release branch $2 not found. Creating the release branch" >> $LOG_FILE
+				if [ $RELEASE_FOUND == "NO" ]; then
+					echo "Release branch $2 not found. Creating the release branch and checkingout to it" >> $LOG_FILE
 					git checkout -b $2
-					git push origin $2
-					echo "Successfully pushed the code to release branch $2" >> $LOG_FILE
+					STATUS=$?
+					git push origin $2   ### CHECK if this needed at this place ???
+					echo "Successfully pushed the code to release branch $2" >> $LOG_FILE					
+				else
+					echo "Release branch $2 found and checkedout status is : $STATUS" >> $LOG_FILE
+				fi
+				
+				####
+				if [ "$STATUS" -eq 0 ]; then
+						echo "Checkout to release branch is successful">>$LOG_FILE
+						RESULT=`git merge $1`
+						if [ "$RESULT" == "Merged to release branch $2" ]; then
+							git push                                                                
+							TAG_FOUND="NO"
+							#Check if the tag exists in git
+							for tag_name in $(git tag)
+							do
+								echo "Checking the tag $tag_name" >>$LOG_FILE
+								if [ $tag_name = "$3" ]; then
+									TAG_FOUND="YES"
+									echo "Tag $3 found and need to be deleted" >>$LOG_FILE
+									break
+								fi                                                      
+							done
+								
+							#Delete the tag if it is already present
+							if [ $TAG_FOUND == "YES" ]; then
+								git tag -d $3
+								git push -u origin tag :$3
+								echo "Successfully deleted the tag $3" >>$LOG_FILE
+							fi
+							#Create the tag
+							git tag $3
+							git push origin tag $3
+							echo "Successfully created the tag and merged the code to release branch" >>$LOG_FILE
+						elif [ "$RESULT" == "Already up-to-date." ]; then
+							echo "Result : $RESULT" >> $LOG_FILE
+						else								
+							echo "Result : $RESULT" >> $LOG_FILE
+							echo "Conflicts found while merging to $2" >> $LOG_FILE
+							exit 1
+						fi
+				else
+					echo "Release branch $2 checkout not successful" >> $LOG_FILE
+					exit 1
 				fi
 			else
-				echo "Error while git pull from stash for development branch " >> $LOG_FILE
+				echo "Release branch $2 checkout status : $STATUS is not successful" >>$LOG_FILE
 				exit 1
-			fi
+			fi				
 		else
-			echo "Cannot Checkout development branch $1" >> $LOG_FILE
+			echo "Error while git pull from stash for development branch " >> $LOG_FILE
 			exit 1
 		fi
-		echo "Done with the script" >> $LOG_FILE
-		exit 1
+	#else
+	#	echo "Cannot Checkout development branch $1" >> $LOG_FILE
+	#	exit 1
 	fi
+	#echo "Done with the script" >> $LOG_FILE
+	#exit 1
 #done < c:/swethaw/abc
 done
 
